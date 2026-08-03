@@ -172,24 +172,26 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
   </div>
 
   <div class="card">
-    <h2>② 投資額</h2>
-    <div class="amount-input">
-      <input type="text" inputmode="numeric" id="amountInput" value="1,000,000">
-      <span>円</span>
-    </div>
-    <div class="chips" id="amountChips">
-      <div class="chip" data-amt="100000">10万</div>
-      <div class="chip" data-amt="500000">50万</div>
-      <div class="chip active" data-amt="1000000">100万</div>
-      <div class="chip" data-amt="3000000">300万</div>
-      <div class="chip" data-amt="10000000">1000万</div>
+    <h2>② 投資スタイル</h2>
+    <div class="segment" id="modeTabs">
+      <button class="active" data-mode="lump">💰 一括投資</button>
+      <button data-mode="dca">📅 積立投資</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>③ 期間</h2>
+    <h2 id="amountLabel">③ 投資額</h2>
+    <div class="amount-input">
+      <input type="text" inputmode="numeric" id="amountInput" value="1,000,000">
+      <span id="amountUnit">円</span>
+    </div>
+    <div class="chips" id="amountChips"></div>
+  </div>
+
+  <div class="card">
+    <h2>④ 期間</h2>
     <div class="date-row">
-      <div class="label">開始日</div>
+      <div class="label" id="startLabel">開始日</div>
       <select id="startY"></select>
       <select id="startM"></select>
       <select id="startD"></select>
@@ -201,6 +203,7 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
       <select id="endD"></select>
     </div>
     <div class="date-hint" id="rangeHint"></div>
+    <div class="date-hint" id="dcaHint" style="display:none;"></div>
   </div>
 
   <button class="search-btn" id="searchBtn">利回りを検索する</button>
@@ -212,10 +215,10 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
       <div class="sub" id="resSub"></div>
     </div>
     <div class="stat-grid">
-      <div class="stat"><div class="k">投資額</div><div class="v" id="resPrincipal">-</div></div>
+      <div class="stat"><div class="k" id="resPrincipalLabel">投資額</div><div class="v" id="resPrincipal">-</div></div>
       <div class="stat"><div class="k">評価額</div><div class="v" id="resFinal">-</div></div>
       <div class="stat"><div class="k">損益</div><div class="v" id="resProfit">-</div></div>
-      <div class="stat"><div class="k">年率換算（CAGR）</div><div class="v" id="resCagr">-</div></div>
+      <div class="stat"><div class="k" id="resFourthLabel">年率換算（CAGR）</div><div class="v" id="resFourth">-</div></div>
     </div>
     <div class="chart-box" id="chartBox"></div>
     <div class="fx-note" id="fxNote" style="display:none;"></div>
@@ -230,6 +233,12 @@ const DATA_URL = "data/prices.json";
 let DATA = null;
 let selectedCategory = "domestic";
 let selectedSymbol = null;
+let mode = "lump"; // "lump" | "dca"
+
+const AMOUNT_CHIPS = {
+  lump: [["100000","10万"],["500000","50万"],["1000000","100万",true],["3000000","300万"],["10000000","1000万"]],
+  dca: [["10000","1万"],["30000","3万"],["50000","5万",true],["100000","10万"],["200000","20万"]],
+};
 
 const fmtYen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
 const fmtPct = n => (n>=0?"+":"") + n.toFixed(1) + "%";
@@ -357,11 +366,47 @@ document.getElementById("categoryTabs").addEventListener("click", e=>{
   selectFund(DATA.tickers.find(t=>t.category===selectedCategory).symbol);
 });
 
+function buildAmountChips(){
+  const wrap = document.getElementById("amountChips");
+  wrap.innerHTML = "";
+  AMOUNT_CHIPS[mode].forEach(([amt,label,isDefault])=>{
+    const chip = document.createElement("div");
+    chip.className = "chip" + (isDefault ? " active":"");
+    chip.dataset.amt = amt;
+    chip.textContent = label;
+    wrap.appendChild(chip);
+    if(isDefault) document.getElementById("amountInput").value = Number(amt).toLocaleString("ja-JP");
+  });
+}
+
+document.getElementById("modeTabs").addEventListener("click", e=>{
+  const btn = e.target.closest("button[data-mode]");
+  if(!btn) return;
+  mode = btn.dataset.mode;
+  document.querySelectorAll("#modeTabs button").forEach(b=>b.classList.toggle("active", b===btn));
+  const isDca = mode === "dca";
+  document.getElementById("amountLabel").textContent = isDca ? "③ 毎月の積立額" : "③ 投資額";
+  document.getElementById("startLabel").textContent = isDca ? "開始月" : "開始日";
+  document.getElementById("dcaHint").style.display = isDca ? "block" : "none";
+  buildAmountChips();
+  document.getElementById("result").style.display = "none";
+  updateDcaHint();
+});
+
 document.getElementById("amountChips").addEventListener("click", e=>{
   const chip = e.target.closest(".chip");
   if(!chip) return;
   document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active", c===chip));
   document.getElementById("amountInput").value = Number(chip.dataset.amt).toLocaleString("ja-JP");
+});
+
+function updateDcaHint(){
+  if(mode !== "dca") return;
+  const d = document.getElementById("startD").value;
+  document.getElementById("dcaHint").textContent = `毎月${d}日（月末に満たない月は月末日）に積み立てたものとして計算します。`;
+}
+["startY","startM","startD"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", updateDcaHint);
 });
 
 document.getElementById("amountInput").addEventListener("input", e=>{
@@ -398,16 +443,24 @@ function buildSparkline(dates, values){
   </svg>`;
 }
 
-function runSearch(){
-  showError("");
-  const info = tickerInfo(selectedSymbol);
-  const principal = Number(document.getElementById("amountInput").value.replace(/[^0-9]/g,"")) || 0;
-  if(principal <= 0){ showError("投資額を入力してください。"); return; }
+// 開始日と同じ「日」で、開始月〜終了月まで毎月1本ずつ購入日を作る（月末に満たない月は月末日にクランプ）
+function monthlyPurchaseDates(startDate, endDate){
+  const [sy,sm,sd] = startDate.split("-").map(Number);
+  const [ey,em] = endDate.split("-").map(Number);
+  const dates = [];
+  let y = sy, m = sm;
+  while(y < ey || (y===ey && m<=em)){
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const day = Math.min(sd, daysInMonth);
+    const ds = `${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    if(ds <= endDate) dates.push(ds);
+    m++;
+    if(m>12){ m=1; y++; }
+  }
+  return dates;
+}
 
-  const startDate = getSelectedDate("start");
-  const endDate = getSelectedDate("end");
-  if(startDate >= endDate){ showError("開始日は終了日より前にしてください。"); return; }
-
+function runLumpSum(info, principal, startDate, endDate){
   const series = DATA.prices[selectedSymbol];
   const p0 = nearestValue(series, startDate);
   const p1 = nearestValue(series, endDate);
@@ -421,8 +474,7 @@ function runSearch(){
     const fx1 = nearestValue(DATA.usdjpy, endDate);
     const usdAmount = principal / fx0.value;
     const units = usdAmount / p0.value;
-    const finalUsd = units * p1.value;
-    finalValue = finalUsd * fx1.value;
+    finalValue = (units * p1.value) * fx1.value;
     fxNoteHtml = `為替換算あり: 開始時 1USD=${fx0.value.toFixed(2)}円(${fx0.date}) → 終了時 1USD=${fx1.value.toFixed(2)}円(${fx1.date})。価格変動のみのシンプル計算で、分配金・配当・税金・手数料は含みません。`;
   }
 
@@ -432,26 +484,84 @@ function runSearch(){
   const years = days/365.25;
   const cagr = years > 0 ? (Math.pow(finalValue/principal, 1/years) - 1) * 100 : 0;
 
+  document.getElementById("resPrincipalLabel").textContent = "投資額";
+  document.getElementById("resFourthLabel").textContent = "年率換算（CAGR）";
+  document.getElementById("resFourth").textContent = fmtPct(cagr) + " / 年";
+  document.getElementById("resSub").textContent = `${p0.date} 〜 ${p1.date}（約${years.toFixed(1)}年、一括投資）`;
+
+  return {finalValue, principal, profit, pct, fxNoteHtml, chartStart: p0.date, chartEnd: p1.date};
+}
+
+function runDca(info, monthlyAmount, startDate, endDate){
+  const series = DATA.prices[selectedSymbol];
+  const purchaseDates = monthlyPurchaseDates(startDate, endDate);
+  const p1 = nearestValue(series, endDate);
+  const isForeign = info.currency !== "JPY";
+  const fx1 = isForeign ? nearestValue(DATA.usdjpy, endDate) : null;
+
+  let totalUnits = 0;
+  purchaseDates.forEach(d=>{
+    const p = nearestValue(series, d);
+    if(isForeign){
+      const fx = nearestValue(DATA.usdjpy, d);
+      const usdAmount = monthlyAmount / fx.value;
+      totalUnits += usdAmount / p.value;
+    } else {
+      totalUnits += monthlyAmount / p.value;
+    }
+  });
+
+  const principal = monthlyAmount * purchaseDates.length;
+  const finalValue = isForeign ? (totalUnits * p1.value) * fx1.value : totalUnits * p1.value;
+  const profit = finalValue - principal;
+  const pct = (finalValue/principal - 1) * 100;
+  const avgCost = principal / totalUnits; // 円換算の平均取得単価（外貨建ては月ごとの為替も加味した実質値）
+
+  const fxNoteHtml = isForeign
+    ? `為替換算あり: 毎月の購入時レートで円→ドル換算し、終了時 1USD=${fx1.value.toFixed(2)}円(${fx1.date})で円に評価替え。価格変動のみのシンプル計算で、分配金・配当・税金・手数料は含みません。`
+    : "";
+
+  document.getElementById("resPrincipalLabel").textContent = "積立総額";
+  document.getElementById("resFourthLabel").textContent = "平均取得単価（円換算）";
+  document.getElementById("resFourth").textContent = fmtYen(avgCost) + " / 口";
+  document.getElementById("resSub").textContent = `${purchaseDates[0]} 〜 ${p1.date}（積立${purchaseDates.length}回、毎月${fmtYen(monthlyAmount)}）`;
+
+  return {finalValue, principal, profit, pct, fxNoteHtml, chartStart: purchaseDates[0], chartEnd: p1.date};
+}
+
+function runSearch(){
+  showError("");
+  const info = tickerInfo(selectedSymbol);
+  const amount = Number(document.getElementById("amountInput").value.replace(/[^0-9]/g,"")) || 0;
+  if(amount <= 0){ showError(mode==="dca" ? "毎月の積立額を入力してください。" : "投資額を入力してください。"); return; }
+
+  const startDate = getSelectedDate("start");
+  const endDate = getSelectedDate("end");
+  if(startDate >= endDate){ showError("開始日は終了日より前にしてください。"); return; }
+
+  const r = mode === "dca"
+    ? runDca(info, amount, startDate, endDate)
+    : runLumpSum(info, amount, startDate, endDate);
+
   document.getElementById("resFundLabel").textContent = `${info.name}（${info.symbol}）`;
   const pctEl = document.getElementById("resPct");
-  pctEl.textContent = fmtPct(pct);
-  pctEl.className = "pct " + (pct>=0 ? "up":"down");
-  document.getElementById("resSub").textContent = `${p0.date} 〜 ${p1.date}（約${years.toFixed(1)}年）`;
-  document.getElementById("resPrincipal").textContent = fmtYen(principal);
-  document.getElementById("resFinal").textContent = fmtYen(finalValue);
+  pctEl.textContent = fmtPct(r.pct);
+  pctEl.className = "pct " + (r.pct>=0 ? "up":"down");
+  document.getElementById("resPrincipal").textContent = fmtYen(r.principal);
+  document.getElementById("resFinal").textContent = fmtYen(r.finalValue);
   const profitEl = document.getElementById("resProfit");
-  profitEl.textContent = (profit>=0?"+":"") + fmtYen(profit);
-  profitEl.style.color = profit>=0 ? "var(--up)" : "var(--down)";
-  document.getElementById("resCagr").textContent = fmtPct(cagr) + " / 年";
+  profitEl.textContent = (r.profit>=0?"+":"") + fmtYen(r.profit);
+  profitEl.style.color = r.profit>=0 ? "var(--up)" : "var(--down)";
 
   // sparkline
-  const keys = Object.keys(series).sort().filter(k => k>=p0.date && k<=p1.date);
+  const series = DATA.prices[selectedSymbol];
+  const keys = Object.keys(series).sort().filter(k => k>=r.chartStart && k<=r.chartEnd);
   const sampled = keys.filter((_,i)=> i % Math.max(1,Math.floor(keys.length/200)) === 0);
   const values = sampled.map(k=>series[k]);
   document.getElementById("chartBox").innerHTML = values.length>1 ? buildSparkline(sampled, values) : "";
 
   const fxNoteEl = document.getElementById("fxNote");
-  if(fxNoteHtml){ fxNoteEl.style.display="block"; fxNoteEl.innerHTML = fxNoteHtml; }
+  if(r.fxNoteHtml){ fxNoteEl.style.display="block"; fxNoteEl.innerHTML = r.fxNoteHtml; }
   else { fxNoteEl.style.display="none"; }
 
   document.getElementById("result").style.display = "block";
@@ -460,6 +570,7 @@ function runSearch(){
 
 document.getElementById("searchBtn").addEventListener("click", runSearch);
 
+buildAmountChips();
 loadData();
 </script>
 </body>
