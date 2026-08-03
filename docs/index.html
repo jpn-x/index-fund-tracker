@@ -162,15 +162,79 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
   border-radius:12px;padding:11px 14px;font-size:.72rem;line-height:1.7;margin-bottom:14px;
 }
 .notice-box b{color:#ffe4b3;}
+
+header.app-header{position:relative;}
+.title-row{display:flex;align-items:center;justify-content:center;gap:8px;}
+.howto-btn{
+  border:1px solid var(--border);background:var(--bg-card);color:var(--text-dim);
+  font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;
+  white-space:nowrap;
+}
+.howto-btn:active{transform:scale(0.96);}
+
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(4,6,14,0.72);z-index:100;
+  padding:20px 16px;overflow-y:auto;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal-card{
+  background:linear-gradient(180deg, var(--bg-card), var(--bg-elev));
+  border:1px solid var(--border);border-radius:var(--radius);
+  max-width:480px;width:100%;padding:20px;margin-top:6vh;
+  box-shadow:0 20px 60px -20px rgba(0,0,0,0.7);
+}
+.modal-card h3{margin:0 0 14px;font-size:1.05rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{
+  border:0;background:var(--bg);color:var(--text-dim);width:30px;height:30px;border-radius:50%;
+  font-size:1rem;cursor:pointer;flex-shrink:0;
+}
+.modal-section{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;}
+.modal-section h4{margin:0 0 8px;font-size:.9rem;font-weight:800;}
+.modal-section ol{margin:0;padding-left:1.2em;font-size:.82rem;line-height:1.8;color:var(--text-dim);}
+.modal-section ol li b{color:var(--text);}
+.modal-tip{font-size:.72rem;color:var(--text-dim);line-height:1.7;padding:0 2px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="app-header">
-    <h1>もしもNISAシミュレーター</h1>
+    <div class="title-row">
+      <h1>もしもNISAシミュレーター</h1>
+      <button class="howto-btn" id="howtoBtn">❓ 使い方</button>
+    </div>
     <p>あの時◯円始めていたら、今いくら？<br>人気インデックスファンド・ETFの実際の値動きで計算します</p>
   </header>
+
+  <div class="modal-overlay" id="howtoModal">
+    <div class="modal-card">
+      <h3>使い方 <button class="modal-close" id="howtoClose">✕</button></h3>
+
+      <div class="modal-section">
+        <h4>💰 一括投資モード</h4>
+        <ol>
+          <li>① で銘柄を1つタップして選ぶ</li>
+          <li>② で「一括投資」を選ぶ</li>
+          <li>③ に投資したい金額を入力（例: 100万円）</li>
+          <li>④ で「開始日」と「終了日」を選ぶ</li>
+          <li>「利回りを検索する」をタップ →「<b>その日に一括で入れてたら、今いくらになってたか</b>」がわかります</li>
+        </ol>
+      </div>
+
+      <div class="modal-section">
+        <h4>📅 積立投資モード</h4>
+        <ol>
+          <li>① で銘柄を1つタップして選ぶ</li>
+          <li>② で「積立投資」を選ぶ</li>
+          <li>③ に毎月積み立てたい金額を入力（例: 3万円）</li>
+          <li>④ の「開始月」で選んだ日にちを毎月の積立日として、終了日まで自動でコツコツ買い付けたと仮定します（例: 5日開始なら毎月5日に購入）</li>
+          <li>「利回りを検索する」をタップ →「<b>毎月コツコツ積み立ててたら、今いくらになってたか</b>」がわかります</li>
+        </ol>
+      </div>
+
+      <p class="modal-tip">※ 海外ETF・海外資産に投資する銘柄は、購入時と評価時の為替レートも自動で加味して円換算しています。<br>※ 分配金・配当金の再投資、税金、手数料は考慮していません（あくまで価格変動のみの簡易シミュレーションです）。</p>
+    </div>
+  </div>
 
   <div class="notice-box">
     <b>⚠️ このツールに含まれていない要素</b><br>
@@ -589,6 +653,11 @@ function runSearch(){
 }
 
 document.getElementById("searchBtn").addEventListener("click", runSearch);
+
+const howtoModal = document.getElementById("howtoModal");
+document.getElementById("howtoBtn").addEventListener("click", ()=> howtoModal.classList.add("open"));
+document.getElementById("howtoClose").addEventListener("click", ()=> howtoModal.classList.remove("open"));
+howtoModal.addEventListener("click", e=> { if(e.target === howtoModal) howtoModal.classList.remove("open"); });
 
 buildAmountChips();
 loadData();
