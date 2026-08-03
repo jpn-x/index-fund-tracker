@@ -150,6 +150,12 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
 .footer-note a{color:var(--text-dim);}
 
 .error-box{display:none;background:rgba(255,92,122,0.12);border:1px solid rgba(255,92,122,0.4);color:#ffb3c1;border-radius:12px;padding:12px 14px;font-size:.82rem;margin-bottom:14px;}
+
+.notice-box{
+  background:rgba(255,196,92,0.1);border:1px solid rgba(255,196,92,0.35);color:#ffd899;
+  border-radius:12px;padding:11px 14px;font-size:.72rem;line-height:1.7;margin-bottom:14px;
+}
+.notice-box b{color:#ffe4b3;}
 </style>
 </head>
 <body>
@@ -159,6 +165,11 @@ header.app-header p{margin:0;color:var(--text-dim);font-size:.82rem;line-height:
     <h1>もしもNISAシミュレーター</h1>
     <p>あの時◯円始めていたら、今いくら？<br>人気インデックスファンド・ETFの実際の値動きで計算します</p>
   </header>
+
+  <div class="notice-box">
+    <b>⚠️ このツールに含まれていない要素</b><br>
+    分配金・配当金の再投資、税金、購入時手数料・信託報酬などのコストは<b>一切考慮していません</b>。あくまで基準価額・終値の変動のみで計算した簡易シミュレーションです。実際のリターンとは差が生じます。
+  </div>
 
   <div class="error-box" id="errorBox"></div>
 
