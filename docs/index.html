@@ -386,9 +386,9 @@ function buildDateSelects(minDate, maxDate){
   const [minY,minM,minD] = minDate.split("-").map(Number);
   const [maxY,maxM,maxD] = maxDate.split("-").map(Number);
 
-  // デフォルト: 終了日=データ最新日、開始日=5年前 or データ開始日のうち遅い方
+  // デフォルト: 終了日=データ最新日、開始日=2年前 or データ開始日のうち遅い方
   let defStart = new Date(maxY, maxM-1, maxD);
-  defStart.setFullYear(defStart.getFullYear()-5);
+  defStart.setFullYear(defStart.getFullYear()-2);
   const minDateObj = new Date(minY, minM-1, minD);
   if(defStart < minDateObj) defStart = minDateObj;
 
